@@ -1,0 +1,67 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: This is a banking app using S3, Lambda amd API Gateway
+Resources: 
+   # bankingS3bucket:
+      # Type: AWS::S3::Bucket
+      # DeletionPolicy: Retain
+      # Properties:
+         # BucketName: balancestatus1235
+   # LambdaExecutionRole:
+      # Type: AWS::IAM::Role
+      # DeletionPolicy: Retain
+      # Properties:
+         # AssumeRolePolicyDocument: 
+            # Version: "2012-10-17"
+            # Statement: 
+               # - Effect: "Allow"
+               #   Principal: 
+                  #   Service: 
+                     #  - "lambda.amazonaws.com"
+               #   Action: 
+                  #  - "sts:AssumeRole"
+         # Description: IAM Role for Lambda to access S3
+         # ManagedPolicyArns: 
+            # - arn:aws:iam::aws:policy/AmazonS3FullAccess
+         # RoleName: LambdaExecutionRole
+   LambdaFunction:
+      Type: AWS::Lambda::Function
+      DeletionPolicy: Retain
+      Properties:
+         Runtime: nodejs20.x
+         Role: arn:aws:iam::971422719771:role/LambdaExecutionRole
+         # Role: !GetAtt LambdaExecutionRole.Arn.
+         Handler: index.handler
+         Code:
+            ZipFile: |
+               const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
+               const { Readable } = require("stream");
+               const s3 = new S3Client({ region: "us-east-1" }); // replace "us-east-1" with your AWS Region
+               // Helper function to convert stream to a string
+               const streamToString = (stream) =>
+               new Promise((resolve, reject) => {
+                  const chunks = [];
+                  stream.on("data", (chunk) => chunks.push(chunk));
+                  stream.on("error", reject);
+                  stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf-8")));
+               });
+               exports.handler = async function(event) {
+                  const data = await s3.send(
+                     new GetObjectCommand({ Bucket: "balancestatus1235", Key: "accountBalance" })
+                  );
+                  const bodyContents = await streamToString(data.Body);
+                  return bodyContents;
+               };
+         Description: API Gateway Lambda S3
+         TracingConfig:
+            Mode: Active
+   bankingRestAPI:
+      Type: AWS::ApiGateway::RestApi
+      Properties:
+         Name: balancestatusapi
+   bankingStatusResource:
+      Type: AWS::ApiGateway::Resource
+      Properties:
+         ParentId: !GetAtt bankingRestAPI.RootResourceId
+         PathPart: balancestatus01
+         RestApiId: !Ref bankingRestAPI
+         
