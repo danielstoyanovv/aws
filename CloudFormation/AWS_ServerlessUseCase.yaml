@@ -1,9 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: This is a banking app using S3, Lambda amd API Gateway
 Parameters:
-   BucketNameParameter:
-      Description: Enter the name of S3 bucket
-      Type: String
    LambdaExecutionRoleParameter:
       Description: Enter lambda execution role
       Type: String
@@ -31,7 +28,7 @@ Resources:
       Type: AWS::S3::Bucket
       DeletionPolicy: Retain
       Properties:
-         BucketName: !Ref BucketNameParameter
+         BucketName: balancestatus1235
    LambdaExecutionRole:
       Type: AWS::IAM::Role
       DeletionPolicy: Retain
