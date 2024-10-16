@@ -1,35 +1,61 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: This is a banking app using S3, Lambda amd API Gateway
+Parameters:
+   BucketNameParameter:
+      Description: Enter the name of S3 bucket
+      Type: String
+   LambdaExecutionRoleParameter:
+      Description: Enter lambda execution role
+      Type: String
+   LambdaRuntimeParameter:
+      Description: Enter the lambda runtime 
+      Type: String
+      Default: nodejs20.x
+      AllowedValues:
+         - nodejs20.x
+         - nodejs19.x
+         - nodejs18.x
+   RestApiNameParameter:
+      Description: Enter the name of REST API
+      Type: String
+   ApiStageParameter:
+      Description: Enter the value of API Stage
+      Type: String
+      Default: Dev
+      AllowedValues:
+         - Dev
+         - QA
+         - Prod
 Resources: 
-   # bankingS3bucket:
-      # Type: AWS::S3::Bucket
-      # DeletionPolicy: Retain
-      # Properties:
-         # BucketName: balancestatus1235
-   # LambdaExecutionRole:
-      # Type: AWS::IAM::Role
-      # DeletionPolicy: Retain
-      # Properties:
-         # AssumeRolePolicyDocument: 
-            # Version: "2012-10-17"
-            # Statement: 
-               # - Effect: "Allow"
-               #   Principal: 
-                  #   Service: 
-                     #  - "lambda.amazonaws.com"
-               #   Action: 
-                  #  - "sts:AssumeRole"
-         # Description: IAM Role for Lambda to access S3
-         # ManagedPolicyArns: 
-            # - arn:aws:iam::aws:policy/AmazonS3FullAccess
-         # RoleName: LambdaExecutionRole
+   bankingS3bucket:
+      Type: AWS::S3::Bucket
+      DeletionPolicy: Retain
+      Properties:
+         BucketName: !Ref BucketNameParameter
+   LambdaExecutionRole:
+      Type: AWS::IAM::Role
+      DeletionPolicy: Retain
+      Properties:
+         AssumeRolePolicyDocument: 
+            Version: "2012-10-17"
+            Statement: 
+               - Effect: "Allow"
+                 Principal: 
+                    Service: 
+                      - "lambda.amazonaws.com"
+                 Action: 
+                   - "sts:AssumeRole"
+         Description: IAM Role for Lambda to access S3
+         ManagedPolicyArns: 
+            - arn:aws:iam::aws:policy/AmazonS3FullAccess
+         RoleName: !Ref LambdaExecutionRoleParameter
    LambdaFunction:
+      DependsOn: LambdaExecutionRole
       Type: AWS::Lambda::Function
       DeletionPolicy: Retain
       Properties:
-         Runtime: nodejs20.x
-         Role: arn:aws:iam::971422719771:role/LambdaExecutionRole
-         # Role: !GetAtt LambdaExecutionRole.Arn.
+         Runtime: !Ref LambdaRuntimeParameter
+         Role: !GetAtt LambdaExecutionRole.Arn
          Handler: index.handler
          Code:
             ZipFile: |
@@ -57,11 +83,39 @@ Resources:
    bankingRestAPI:
       Type: AWS::ApiGateway::RestApi
       Properties:
-         Name: balancestatusapi
+         Name: !Ref RestApiNameParameter
    bankingStatusResource:
       Type: AWS::ApiGateway::Resource
       Properties:
          ParentId: !GetAtt bankingRestAPI.RootResourceId
          PathPart: balancestatus01
          RestApiId: !Ref bankingRestAPI
-         
+   bankingStatusMehod:
+      Type: AWS::ApiGateway::Method
+      Properties:
+         AuthorizationType: NONE
+         HttpMethod: GET
+         MethodResponses:
+            - StatusCode : 200
+         Integration: 
+            Type: AWS
+            IntegrationResponses:
+               - StatusCode : 200
+            IntegrationHttpMethod: POST
+            Uri: !Sub arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/${LambdaFunction.Arn}/invocations
+         ResourceId: !Ref bankingStatusResource
+         RestApiId: !Ref bankingRestAPI
+   APIDeployment:
+      DependsOn: bankingStatusMehod
+      Type: AWS::ApiGateway::Deployment
+      Properties:
+         Description: My deployment to prod 
+         RestApiId: !Ref bankingRestAPI
+         StageName: !Ref ApiStageParameter
+   lambdaPermission:
+      Type: AWS::Lambda::Permission
+      Properties:
+         Action: lambda:InvokeFunction
+         FunctionName: !Ref LambdaFunction
+         Principal: apigateway.amazonaws.com
+         SourceAccount: 971422719771
