@@ -8,7 +8,7 @@ Metadata:
           default: "Amazon EC2 instance configuration"
         Parameters: 
           - InstanceType
-          - ImageId
+          - LatestAmiId
      - 
         Label: 
           default: "Storage"
