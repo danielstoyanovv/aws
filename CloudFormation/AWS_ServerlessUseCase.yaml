@@ -15,7 +15,7 @@ Metadata:
           - LambdaRuntimeParameter
      - 
         Label: 
-          default: "API Gateway"
+          default: "API configuration"
         Parameters: 
           - RestApiNameParameter
           - ApiStageParameter 
@@ -98,16 +98,19 @@ Resources:
             Mode: Active
    bankingRestAPI:
       Type: AWS::ApiGateway::RestApi
+      DeletionPolicy: Retain
       Properties:
          Name: !Ref RestApiNameParameter
    bankingStatusResource:
       Type: AWS::ApiGateway::Resource
+      DeletionPolicy: Retain
       Properties:
          ParentId: !GetAtt bankingRestAPI.RootResourceId
          PathPart: balancestatus01
          RestApiId: !Ref bankingRestAPI
    bankingStatusMehod:
       Type: AWS::ApiGateway::Method
+      DeletionPolicy: Retain
       Properties:
          AuthorizationType: NONE
          HttpMethod: GET
@@ -124,12 +127,14 @@ Resources:
    APIDeployment:
       DependsOn: bankingStatusMehod
       Type: AWS::ApiGateway::Deployment
+      DeletionPolicy: Retain
       Properties:
          Description: My deployment to prod 
          RestApiId: !Ref bankingRestAPI
          StageName: !Ref ApiStageParameter
    lambdaPermission:
       Type: AWS::Lambda::Permission
+      DeletionPolicy: Retain
       Properties:
          Action: lambda:InvokeFunction
          FunctionName: !Ref LambdaFunction

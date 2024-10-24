@@ -1,0 +1,85 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "Cloud formation is not bad"
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+     - 
+        Label: 
+          default: "Amazon EC2 instance configuration"
+        Parameters: 
+          - InstanceType
+          - ImageId
+     - 
+        Label: 
+          default: "Storage"
+        Parameters: 
+          - S3BucketName
+     - 
+        Label: 
+          default: "Network configuration"
+        Parameters: 
+          - EC2Subnet
+          - EC2VPC 
+Parameters:
+  LatestAmiId:
+    Description: Region specific image from the Parameter Store
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+  InstanceType:
+    Description: Enter t2.micro, m1.small, or m1.large. Default is t2.micro.
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - m1.small
+      - m1.large
+  EC2VPC:
+    Description: Choose CidrBlock.
+    Type: String
+    Default: 10.0.0.0/13 
+    AllowedValues:
+      - 10.0.0.0/13 
+      - 10.0.0.0/12
+      - 10.0.0.0/11
+  EC2Subnet:
+    Description: Set subnet.
+    Type: String
+    Default: 10.0.0.0/24
+    AllowedValues:
+      - 10.0.0.0/24
+      - 10.0.0.0/26
+      - 10.0.0.0/28
+  S3BucketName:
+    Description: Set S3 Bucket name.
+    Type: String
+Resources:
+  S3BucketAll:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+       BucketName: !Ref S3BucketName
+  EC2VPCAll:
+      Type: AWS::EC2::VPC
+      DeletionPolicy: Retain
+      Properties:
+        CidrBlock: !Ref EC2VPC
+        EnableDnsHostnames: True
+        Tags:
+          - Key: Project
+            Value: Banking
+  EC2SubnetAll:
+      Type: AWS::EC2::Subnet
+      DeletionPolicy: Retain
+      Properties:
+        CidrBlock: !Ref EC2Subnet
+        Tags: 
+          - Key: Project
+            Value: Banking
+        VpcId: !Ref EC2VPCAll
+  EC2InstanceAll:
+      Type: AWS::EC2::Instance
+      DeletionPolicy: Retain
+      Properties:
+        ImageId: !Ref LatestAmiId
+        InstanceType: !Ref InstanceType
+        SubnetId: !Ref EC2SubnetAll
