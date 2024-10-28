@@ -1,5 +1,18 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: "This template creates the AutoScaling Group"
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+     - 
+        Label: 
+          default: "Group configuration"
+        Parameters: 
+          - LatestAmiIdParameter
+     - 
+        Label: 
+          default: "Role configuration"
+        Parameters: 
+          - RoleNameParameter
 Parameters:
   LatestAmiIdParameter:
     Description: Region specific image from the Parameter Store
