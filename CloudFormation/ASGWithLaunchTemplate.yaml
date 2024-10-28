@@ -1,0 +1,73 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "This template creates the AutoScaling Group"
+Parameters:
+  LatestAmiIdParameter:
+    Description: Region specific image from the Parameter Store
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+  RoleNameParameter:
+      Description: Enter role name
+      Type: String
+Resources: 
+  myLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    DeletionPolicy: Retain
+    Properties:
+      LaunchTemplateName: !Sub ${AWS::StackName}-launch-template
+      LaunchTemplateData:
+        ImageId: !Ref LatestAmiIdParameter
+        InstanceType: t3.micro
+        IamInstanceProfile:
+          Name: !Ref myInstanceProfile
+        SecurityGroupIds:
+        - sg-0e8359d578b7ea9fb
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            yum update -y
+            yum install -y httpd.x86_64
+            systemctl start httpd.service
+            systemctl enable httpd.service
+        TagSpecifications:
+        - ResourceType: instance
+          Tags:
+          - Key: environment
+            Value: development
+        - ResourceType: volume
+          Tags:
+          - Key: environment
+            Value: development
+  myInstanceRole:
+    Type: AWS::IAM::Role
+    DeletionPolicy: Retain
+    Properties:
+      RoleName: !Ref RoleNameParameter
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: 'Allow'
+          Principal:
+            Service:
+            - 'ec2.amazonaws.com'
+          Action:
+          - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::971422719771:policy/myCustomerManagedPolicy'
+  myInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    DeletionPolicy: Retain
+    Properties:
+      Path: '/'
+      Roles:
+      - !Ref myInstanceRole
+  WebServerAutoScale:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      LaunchTemplate:
+        LaunchTemplateId: !Ref myLaunchTemplate
+        Version: !GetAtt myLaunchTemplate.LatestVersionNumber
+      MaxSize: '1'
+      MinSize: '1'
+      VPCZoneIdentifier: 
+        - subnet-0a93de1372d39a81f
+        - subnet-015d7beec56fe8c97
