@@ -125,9 +125,9 @@ Resources:
     Type: AWS::SNS::Topic
     DeletionPolicy: Retain
     Properties:
-      TopicName: Alerts
+      TopicName: MyAlert
   SNSSubscription:
-    Type: AWS::SNS::Subscription
+    Type: AWS::SNS::Subscription    
     DeletionPolicy: Retain
     Properties:
       Endpoint: daniel.stoyanovv@gmail.com
