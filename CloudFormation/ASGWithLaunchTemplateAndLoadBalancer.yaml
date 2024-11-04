@@ -84,8 +84,6 @@ Resources:
       VPCZoneIdentifier: 
         - subnet-0a93de1372d39a81f
         - subnet-015d7beec56fe8c97
-      # LoadBalancerNames:
-      # - !Ref MyLoadBalancer
       TargetGroupARNs:
       - !Ref MyLoadBalancingTargetGroup
       
