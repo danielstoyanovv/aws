@@ -1,0 +1,237 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "This is a cloudformation to develop the baseline Network resources such as VPC and other such components"
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: "Network configuration"
+        Parameters:
+          - vpcCB
+      -
+        Label:
+          default: "Tags"
+        Parameters:
+          - vpcEnvironment
+          - vpcProjectName
+          - vpcProjectID
+          - vpcResourceName
+Parameters:
+  vpcCB:
+    Description: Select CidrBlock.
+    Type: String
+    Default: 10.0.0.0/16
+    AllowedValues:
+      - 10.0.0.0/16
+      - 10.0.0.0/18
+  vpcEnvironment:
+    Description: Select Environment type.
+    Type: String
+    Default: Dev
+    AllowedValues:
+      - Dev
+      - Prod
+  vpcProjectName:
+    Description: Set Project Name.
+    Type: String
+  vpcProjectID:
+    Description: Set Project ID.
+    Type: String
+  vpcResourceName:
+    Description: Set Resource Name.
+    Type: String
+Resources:
+  vpc546:
+      Type: AWS::EC2::VPC
+      DeletionPolicy: Retain
+      Properties:
+        CidrBlock: !Ref vpcCB
+        EnableDnsHostnames: True
+        EnableDnsSupport: True
+        Tags:
+          - Key: Environment
+            Value: !Ref vpcEnvironment
+          - Key: Project Name
+            Value: !Ref vpcProjectName
+          - Key: Project ID
+            Value: !Ref vpcProjectID
+          - Key: Resource Name
+            Value: !Ref vpcResourceName
+  subnet546:
+    Type: AWS::EC2::Subnet
+    DeletionPolicy: Retain
+    Properties:
+      AvailabilityZone: us-east-1a
+      CidrBlock: 10.0.0.0/24
+      Tags:
+        - Key: Environment
+          Value: !Ref vpcEnvironment
+        - Key: Project Name
+          Value: !Ref vpcProjectName
+        - Key: Project ID
+          Value: !Ref vpcProjectID
+        - Key: Resource Name
+          Value: PublicSubnet1
+      VpcId: !Ref vpc546
+  subnet113:
+    Type: AWS::EC2::Subnet
+    DeletionPolicy: Retain
+    Properties:
+      AvailabilityZone: us-east-1b
+      CidrBlock: 10.0.1.0/24
+      Tags:
+        - Key: Environment
+          Value: !Ref vpcEnvironment
+        - Key: Project Name
+          Value: !Ref vpcProjectName
+        - Key: Project ID
+          Value: !Ref vpcProjectID
+        - Key: Resource Name
+          Value: PublicSubnet2
+      VpcId: !Ref vpc546
+  subnet886:
+    Type: AWS::EC2::Subnet
+    DeletionPolicy: Retain
+    Properties:
+      AvailabilityZone: us-east-1c
+      CidrBlock: 10.0.2.0/24
+      Tags:
+        - Key: Environment
+          Value: !Ref vpcEnvironment
+        - Key: Project Name
+          Value: !Ref vpcProjectName
+        - Key: Project ID
+          Value: !Ref vpcProjectID
+        - Key: Resource Name
+          Value: PublicSubnet3
+      VpcId: !Ref vpc546
+  subnet335:
+    Type: AWS::EC2::Subnet
+    DeletionPolicy: Retain
+    Properties:
+      AvailabilityZone: us-east-1a
+      CidrBlock: 10.0.3.0/24
+      Tags:
+        - Key: Environment
+          Value: !Ref vpcEnvironment
+        - Key: Project Name
+          Value: !Ref vpcProjectName
+        - Key: Project ID
+          Value: !Ref vpcProjectID
+        - Key: Resource Name
+          Value: PrivateSubnet1
+      VpcId: !Ref vpc546
+  myInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    DeletionPolicy: Retain
+    Properties:
+      Tags:
+        - Key: Environment
+          Value: !Ref vpcEnvironment
+        - Key: Project Name
+          Value: !Ref vpcProjectName
+        - Key: Project ID
+          Value: !Ref vpcProjectID
+        - Key: Resource Name
+          Value: InternetGateway
+  vpcGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    DeletionPolicy: Retain
+    Properties:
+      InternetGatewayId: !Ref myInternetGateway
+      VpcId: !Ref vpc546
+  myRouteTable:
+    Type: AWS::EC2::RouteTable
+    DeletionPolicy: Retain
+    Properties:
+      VpcId: !Ref vpc546
+      Tags:
+        - Key: Environment
+          Value: !Ref vpcEnvironment
+        - Key: Project Name
+          Value: !Ref vpcProjectName
+        - Key: Project ID
+          Value: !Ref vpcProjectID
+        - Key: Resource Name
+          Value: RouteTable
+  publicRoute:
+    Type: AWS::EC2::Route
+    DeletionPolicy: Retain
+    DependsOn: myInternetGateway
+    Properties:
+      RouteTableId: !Ref myRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref myInternetGateway
+  publicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DeletionPolicy: Retain
+    Properties:
+      SubnetId: !Ref subnet546
+      RouteTableId: !Ref myRouteTable
+  publicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DeletionPolicy: Retain
+    Properties:
+      SubnetId: !Ref subnet113
+      RouteTableId: !Ref myRouteTable
+  publicSubnet3RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DeletionPolicy: Retain
+    Properties:
+      SubnetId: !Ref subnet886
+      RouteTableId: !Ref myRouteTable
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    DeletionPolicy: Retain
+    Properties:
+      GroupDescription: Allow http to client host
+      VpcId: !Ref vpc546
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Environment
+          Value: !Ref vpcEnvironment
+        - Key: Project Name
+          Value: !Ref vpcProjectName
+        - Key: Project ID
+          Value: !Ref vpcProjectID
+        - Key: Resource Name
+          Value: SecurityGroup
+  myNetworkAcl:
+    Type: AWS::EC2::NetworkAcl
+    DeletionPolicy: Retain
+    Properties:
+      VpcId: !Ref vpc546
+      Tags:
+        - Key: Environment
+          Value: !Ref vpcEnvironment
+        - Key: Project Name
+          Value: !Ref vpcProjectName
+        - Key: Project ID
+          Value: !Ref vpcProjectID
+        - Key: Resource Name
+          Value: NetworkAcl
+  MyNACL:
+    Type: AWS::EC2::NetworkAcl
+    DeletionPolicy: Retain
+    Properties:
+      VpcId: !Ref vpc546
+  OutboundRule:
+    DependsOn: MyNACL
+    Type: AWS::EC2::NetworkAclEntry
+    DeletionPolicy: Retain
+    Properties:
+      NetworkAclId: !Ref MyNACL
+      RuleNumber: 200
+      Protocol: -1
+      Egress: True
+      RuleAction: allow
+      CidrBlock: 0.0.0.0/0
